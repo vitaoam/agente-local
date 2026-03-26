@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agente Local — Windows 11</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Agente Local</h1>
+            <span class="subtitle">Assistente de linguagem natural para Windows 11</span>
+        </header>
+
+        <main id="messages">
+            <div class="message agent">
+                Olá! Sou seu assistente local para Windows 11. Posso verificar seu IP,
+                listar arquivos, abrir aplicativos e mais. Como posso ajudar?
+            </div>
+        </main>
+
+        <div id="confirmation-bar" class="hidden">
+            <div class="confirmation-content">
+                <span id="confirmation-text"></span>
+                <div class="confirmation-actions">
+                    <button class="btn-confirm" onclick="confirmAction()">Confirmar</button>
+                    <button class="btn-cancel" onclick="cancelAction()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <form id="chat-form">
+                <input
+                    type="text"
+                    id="user-input"
+                    placeholder="Ex: qual é o meu IP? / abra o Paint / que horas são?"
+                    autocomplete="off"
+                    autofocus
+                >
+                <button type="submit" id="btn-send">Enviar</button>
+            </form>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
