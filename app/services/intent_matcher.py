@@ -28,16 +28,48 @@ _register(r"\bhoje\b", "obter_hora_atual", _no_args)
 _register(r"\bdata\b.*\batual\b", "obter_hora_atual", _no_args)
 
 # ---------------------------------------------------------------------------
-# Listar Desktop
+# Criar arquivo (DEVE vir antes de Listar Desktop)
 # ---------------------------------------------------------------------------
-_register(r"\blist(?:ar|e|a)\b.*\b(?:desktop|[aá]rea|trabalho)\b", "listar_desktop", _no_args)
-_register(r"\barquivos?\b.*\b(?:desktop|[aá]rea|trabalho)\b", "listar_desktop", _no_args)
-_register(r"\b(?:o\s+que|quais)\b.*\b(?:desktop|[aá]rea|trabalho)\b", "listar_desktop", _no_args)
-_register(r"\b(?:desktop|[aá]rea de trabalho)\b.*\barquivos?\b", "listar_desktop", _no_args)
-_register(r"\bmostr(?:ar|e|a)\b.*\b(?:desktop|[aá]rea|trabalho)\b", "listar_desktop", _no_args)
+def _extract_criar_arquivo(match) -> dict:
+    text = match.string.strip()
+
+    nome_m = re.search(
+        r"(?:chamad[ao]|com\s+(?:o\s+)?nome)\s+['\"]?([a-zA-Z0-9\u00C0-\u024F_.\- ]+?)(?=['\"]?\s*(?:dentro|na|no|da|do|$))",
+        text, re.IGNORECASE,
+    )
+    if not nome_m:
+        nome_m = re.search(
+            r"arquivo\s+(?:de\s+texto\s+)?(?:\.txt\s+)?['\"]?([a-zA-Z0-9\u00C0-\u024F_.\-]+)",
+            text, re.IGNORECASE,
+        )
+    if not nome_m:
+        return None
+
+    nome = nome_m.group(1).strip().strip("'\"")
+    stopwords = {"no", "na", "do", "da", "dentro", "em", "desktop", "um", "uma", "de", "chamado", "chamada"}
+    if nome.lower() in stopwords:
+        return None
+
+    if "." not in nome:
+        nome += ".txt"
+
+    result = {"nome": nome}
+
+    dir_m = re.search(
+        r"(?:dentro\s+d[ao]|n[ao])\s+pasta\s+['\"]?([a-zA-Z0-9\u00C0-\u024F_ -]+?)(?:['\"]?\s*(?:d[ao]\s+|$))",
+        text, re.IGNORECASE,
+    )
+    if dir_m:
+        dir_name = dir_m.group(1).strip()
+        if dir_name.lower() not in {"área", "area", "trabalho", "desktop"}:
+            result["diretorio"] = dir_name
+
+    return result
+
+_register(r"\bcri(?:ar|e|a)\b[^.]*\barquivo\b", "criar_arquivo", _extract_criar_arquivo)
 
 # ---------------------------------------------------------------------------
-# Criar pasta
+# Criar pasta (DEVE vir antes de Listar Desktop)
 # ---------------------------------------------------------------------------
 def _extract_criar_pasta(match) -> dict:
     nome = match.group("nome").strip().strip("'\"")
@@ -55,6 +87,15 @@ _register(
     "criar_pasta_desktop",
     _extract_criar_pasta,
 )
+
+# ---------------------------------------------------------------------------
+# Listar Desktop
+# ---------------------------------------------------------------------------
+_register(r"\blist(?:ar|e|a)\b.*\b(?:desktop|[aá]rea|trabalho)\b", "listar_desktop", _no_args)
+_register(r"\barquivos?\b.*\b(?:desktop|[aá]rea|trabalho)\b", "listar_desktop", _no_args)
+_register(r"\b(?:o\s+que|quais)\b.*\b(?:desktop|[aá]rea|trabalho)\b", "listar_desktop", _no_args)
+_register(r"\b(?:desktop|[aá]rea de trabalho)\b.*\barquivos?\b", "listar_desktop", _no_args)
+_register(r"\bmostr(?:ar|e|a)\b.*\b(?:desktop|[aá]rea|trabalho)\b", "listar_desktop", _no_args)
 
 # ---------------------------------------------------------------------------
 # Abrir app

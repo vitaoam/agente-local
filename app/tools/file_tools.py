@@ -41,6 +41,52 @@ def listar_desktop() -> dict:
     }
 
 
+def criar_arquivo(nome: str, diretorio: str = "") -> dict:
+    if not nome or not nome.strip():
+        return {"success": False, "message": "Nome do arquivo não pode ser vazio.", "data": None}
+
+    nome = nome.strip()
+    invalid_chars = '<>:"/\\|?*'
+    if any(c in nome for c in invalid_chars):
+        return {"success": False, "message": f"Nome '{nome}' contém caracteres inválidos.", "data": None}
+
+    if diretorio:
+        base = Path(diretorio)
+        if not base.is_absolute():
+            base = DESKTOP_PATH / diretorio
+    else:
+        base = DESKTOP_PATH
+
+    target = base / nome
+    allowed, resolved, error_msg = validate_path(target)
+    if not allowed:
+        return {"success": False, "message": error_msg, "data": None}
+
+    if not base.exists():
+        return {
+            "success": False,
+            "message": f"O diretório '{base.name}' não existe.",
+            "data": None,
+        }
+
+    if target.exists():
+        return {
+            "success": False,
+            "message": f"Já existe um item chamado '{nome}' neste local.",
+            "data": None,
+        }
+
+    try:
+        target.touch()
+        return {
+            "success": True,
+            "message": f"Arquivo '{nome}' criado com sucesso em '{base}'.",
+            "data": {"caminho": str(target)},
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Erro ao criar arquivo: {e}", "data": None}
+
+
 def criar_pasta_desktop(nome: str) -> dict:
     if not nome or not nome.strip():
         return {"success": False, "message": "Nome da pasta não pode ser vazio.", "data": None}

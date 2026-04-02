@@ -7,6 +7,7 @@ from app.config import TOOLS_REQUIRING_CONFIRMATION
 from app.tools.system_tools import obter_ip, obter_hora_atual, info_sistema, espaco_disco
 from app.tools.file_tools import (
     listar_desktop,
+    criar_arquivo,
     criar_pasta_desktop,
     mover_arquivo,
     renomear_arquivo,
@@ -21,6 +22,7 @@ TOOL_MAP = {
     "info_sistema": info_sistema,
     "espaco_disco": espaco_disco,
     "listar_desktop": listar_desktop,
+    "criar_arquivo": criar_arquivo,
     "criar_pasta_desktop": criar_pasta_desktop,
     "mover_arquivo": mover_arquivo,
     "renomear_arquivo": renomear_arquivo,
@@ -33,6 +35,10 @@ TOOL_MAP = {
 }
 
 CONFIRMATION_DESCRIPTIONS = {
+    "criar_arquivo": lambda args: (
+        f"Criar o arquivo '{args.get('nome', '?')}'"
+        + (f" na pasta '{args.get('diretorio')}'" if args.get("diretorio") else " na Área de Trabalho")
+    ),
     "criar_pasta_desktop": lambda args: (
         f"Criar a pasta '{args.get('nome', '?')}' na Área de Trabalho"
     ),
