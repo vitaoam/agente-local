@@ -6,6 +6,50 @@ from app.services.path_guard import validate_path, is_path_allowed
 
 HIDDEN_FILES = {"desktop.ini", "thumbs.db"}
 
+PROTECTED_EXTENSIONS = {".exe", ".dll", ".sys", ".bat", ".cmd", ".ps1", ".reg", ".msi", ".lnk"}
+
+
+def excluir_arquivo(nome: str, diretorio: str = "") -> dict:
+    if not nome or not nome.strip():
+        return {"success": False, "message": "Nome do arquivo não informado.", "data": None}
+
+    nome = nome.strip()
+
+    if diretorio:
+        base = Path(diretorio)
+        if not base.is_absolute():
+            base = DESKTOP_PATH / diretorio
+    else:
+        base = DESKTOP_PATH
+
+    target = base / nome
+    allowed, resolved, error_msg = validate_path(target)
+    if not allowed:
+        return {"success": False, "message": error_msg, "data": None}
+
+    if not resolved.exists():
+        return {"success": False, "message": f"O arquivo '{nome}' não foi encontrado.", "data": None}
+
+    if resolved.is_dir():
+        return {"success": False, "message": "Não é possível excluir pastas, apenas arquivos.", "data": None}
+
+    if resolved.suffix.lower() in PROTECTED_EXTENSIONS:
+        return {
+            "success": False,
+            "message": f"Não é permitido excluir arquivos do tipo '{resolved.suffix}' por segurança.",
+            "data": None,
+        }
+
+    try:
+        resolved.unlink()
+        return {
+            "success": True,
+            "message": f"Arquivo '{nome}' excluído com sucesso.",
+            "data": {"caminho": str(resolved)},
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Erro ao excluir: {e}", "data": None}
+
 
 def listar_desktop() -> dict:
     desktop = DESKTOP_PATH

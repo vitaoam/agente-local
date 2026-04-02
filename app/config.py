@@ -13,4 +13,4 @@ ALLOWED_PATHS: list[Path] = [DESKTOP_PATH, DOCUMENTS_PATH, DOWNLOADS_PATH]
 
 SUBPROCESS_TIMEOUT = 10
 
-TOOLS_REQUIRING_CONFIRMATION = {"criar_arquivo", "criar_pasta_desktop", "mover_arquivo", "renomear_arquivo", "fechar_processo"}
+TOOLS_REQUIRING_CONFIRMATION = {"excluir_arquivo", "criar_arquivo", "criar_pasta_desktop", "mover_arquivo", "renomear_arquivo", "fechar_processo"}

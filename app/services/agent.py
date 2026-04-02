@@ -2,11 +2,12 @@ import json
 
 from app.services.ollama_client import ollama_client, SYSTEM_PROMPT
 from app.services.confirmation_store import confirmation_store
-from app.services.intent_matcher import match_intent
+from app.services.intent_matcher import match_intent, match_blocked
 from app.config import TOOLS_REQUIRING_CONFIRMATION
 from app.tools.system_tools import obter_ip, obter_hora_atual, info_sistema, espaco_disco
 from app.tools.file_tools import (
     listar_desktop,
+    excluir_arquivo,
     criar_arquivo,
     criar_pasta_desktop,
     mover_arquivo,
@@ -22,6 +23,7 @@ TOOL_MAP = {
     "info_sistema": info_sistema,
     "espaco_disco": espaco_disco,
     "listar_desktop": listar_desktop,
+    "excluir_arquivo": excluir_arquivo,
     "criar_arquivo": criar_arquivo,
     "criar_pasta_desktop": criar_pasta_desktop,
     "mover_arquivo": mover_arquivo,
@@ -35,6 +37,10 @@ TOOL_MAP = {
 }
 
 CONFIRMATION_DESCRIPTIONS = {
+    "excluir_arquivo": lambda args: (
+        f"Excluir o arquivo '{args.get('nome', '?')}'"
+        + (f" da pasta '{args.get('diretorio')}'" if args.get("diretorio") else " da Área de Trabalho")
+    ),
     "criar_arquivo": lambda args: (
         f"Criar o arquivo '{args.get('nome', '?')}'"
         + (f" na pasta '{args.get('diretorio')}'" if args.get("diretorio") else " na Área de Trabalho")
@@ -86,6 +92,11 @@ def _build_response(tool_name: str, tool_args: dict) -> dict:
 
 
 async def process_message(user_message: str) -> dict:
+    # 0) Interceptar ações bloqueadas antes de qualquer coisa
+    blocked_msg = match_blocked(user_message)
+    if blocked_msg:
+        return {"type": "response", "message": f"🚫 {blocked_msg}"}
+
     # 1) Tentar resolver localmente por padrões conhecidos (instantâneo)
     local_match = match_intent(user_message)
     if local_match:

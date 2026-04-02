@@ -34,12 +34,12 @@ def _extract_criar_arquivo(match) -> dict:
     text = match.string.strip()
 
     nome_m = re.search(
-        r"(?:chamad[ao]|com\s+(?:o\s+)?nome)\s+['\"]?([a-zA-Z0-9\u00C0-\u024F_.\- ]+?)(?=['\"]?\s*(?:dentro|na|no|da|do|$))",
+        r"(?:chamad[ao]|com\s+(?:o\s+)?nome)\s+['\"]?([a-zA-Z0-9\u00C0-\u024F_.\-]+)",
         text, re.IGNORECASE,
     )
     if not nome_m:
         nome_m = re.search(
-            r"arquivo\s+(?:de\s+texto\s+)?(?:\.txt\s+)?['\"]?([a-zA-Z0-9\u00C0-\u024F_.\-]+)",
+            r"arquivo\s+(?:de\s+texto\s+)?(?:\.txt\s+)?(?:chamad[ao]\s+)?['\"]?([a-zA-Z0-9\u00C0-\u024F_.\-]+)",
             text, re.IGNORECASE,
         )
     if not nome_m:
@@ -225,6 +225,93 @@ _register(r"\brede\b.*\binfo\b", "info_rede", _no_args)
 _register(r"\bconex[ãa]o\b.*\brede\b", "info_rede", _no_args)
 _register(r"\bconfigurar?[çc][ãa]o\b.*\brede\b", "info_rede", _no_args)
 _register(r"\badaptador(?:es)?\b.*\brede\b", "info_rede", _no_args)
+
+# ---------------------------------------------------------------------------
+# Excluir arquivo
+# ---------------------------------------------------------------------------
+def _extract_excluir(match) -> dict:
+    text = match.string.strip()
+
+    nome_m = re.search(
+        r"arquivo\s+(?:de\s+texto\s+)?(?:\.txt\s+)?(?:chamad[ao]\s+)?['\"]?([a-zA-Z0-9\u00C0-\u024F_.\-]+)",
+        text, re.IGNORECASE,
+    )
+    if not nome_m:
+        nome_m = re.search(
+            r"(?:chamad[ao]|com\s+(?:o\s+)?nome)\s+['\"]?([a-zA-Z0-9\u00C0-\u024F_.\-]+)",
+            text, re.IGNORECASE,
+        )
+    if not nome_m:
+        return None
+
+    nome = nome_m.group(1).strip().strip("'\"")
+    stopwords = {"no", "na", "do", "da", "dentro", "em", "desktop", "um", "uma", "de", "chamado", "chamada"}
+    if nome.lower() in stopwords:
+        return None
+
+    result = {"nome": nome}
+
+    dir_m = re.search(
+        r"(?:dentro\s+d[ao]|n[ao]|d[ao])\s+pasta\s+['\"]?([a-zA-Z0-9\u00C0-\u024F_ -]+?)(?:['\"]?\s*(?:d[ao]\s+|$))",
+        text, re.IGNORECASE,
+    )
+    if dir_m:
+        dir_name = dir_m.group(1).strip()
+        if dir_name.lower() not in {"área", "area", "trabalho", "desktop"}:
+            result["diretorio"] = dir_name
+
+    return result
+
+_register(r"\b(?:exclu|apag|delet|remov|elimin)(?:ir|a|e|ar|indo)\b[^.]*\barquivo\b", "excluir_arquivo", _extract_excluir)
+_register(r"\barquivo\b.*\b(?:exclu|apag|delet|remov|elimin)", "excluir_arquivo", _extract_excluir)
+
+
+# ---------------------------------------------------------------------------
+# Ações bloqueadas (interceptar ANTES de cair no Ollama)
+# ---------------------------------------------------------------------------
+BLOCKED_PATTERNS: list[tuple[re.Pattern, str]] = []
+
+
+def _block(pattern: str, message: str):
+    BLOCKED_PATTERNS.append((re.compile(pattern, re.IGNORECASE), message))
+
+
+_block(
+    r"\b(?:exclu|apag|delet|remov|elimin)(?:ir|a|e|ar|indo)\b.*\b(?:pasta|diret[oó]rio)\b",
+    "Não posso excluir pastas por razões de segurança. Você pode fazer isso manualmente pelo Explorador de Arquivos.",
+)
+_block(
+    r"\b(?:pasta|diret[oó]rio)\b.*\b(?:exclu|apag|delet|remov|elimin)",
+    "Não posso excluir pastas por razões de segurança. Você pode fazer isso manualmente pelo Explorador de Arquivos.",
+)
+_block(
+    r"\bdesinstala(?:r|e)\b",
+    "Não posso desinstalar aplicativos por razões de segurança.",
+)
+_block(
+    r"\b(?:registro|regedit)\b",
+    "Não posso acessar ou editar o registro do Windows por razões de segurança.",
+)
+_block(
+    r"\bformata(?:r|e)\b.*\b(?:disco|hd|ssd|unidade|partição)\b",
+    "Não posso formatar discos por razões de segurança.",
+)
+_block(
+    r"\b(?:desliga|reinicia|restart|shutdown)\b.*\b(?:computador|pc|m[aá]quina|sistema)\b",
+    "Não posso desligar ou reiniciar o computador por razões de segurança.",
+)
+_block(
+    r"\bexecut(?:ar|e)\b.*\b(?:powershell|cmd|comando|script)\b",
+    "Não posso executar comandos ou scripts arbitrários por razões de segurança. Utilize as ferramentas disponíveis.",
+)
+
+
+def match_blocked(message: str) -> str | None:
+    text = message.strip()
+    for pattern, msg in BLOCKED_PATTERNS:
+        if pattern.search(text):
+            return msg
+    return None
 
 
 def match_intent(message: str) -> tuple[str, dict] | None:
