@@ -287,6 +287,11 @@ pytest tests/ -v
 - [ ] Logs de auditoria das ações executadas
 - [ ] Containerização com Docker
 
+## Autores
+
+- **Vitor Amaral** — [vitoramamaral@gmail.com](mailto:vitoramamaral@gmail.com)
+- **Cassiano** — [cassianogb@gmail.com](mailto:cassianogb@gmail.com) · [github.com/casmachine](https://github.com/casmachine)
+
 ## Licença
 
 Este projeto é de uso livre. Sinta-se à vontade para usar, modificar e distribuir.
