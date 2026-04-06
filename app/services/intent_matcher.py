@@ -262,8 +262,8 @@ def _extract_excluir(match) -> dict:
 
     return result
 
-_register(r"\b(?:exclu|apag|delet|remov|elimin)(?:ir|a|e|ar|indo)\b[^.]*\barquivo\b", "excluir_arquivo", _extract_excluir)
-_register(r"\barquivo\b.*\b(?:exclu|apag|delet|remov|elimin)", "excluir_arquivo", _extract_excluir)
+_register(r"\b(?:exclu|apag|delet|remov|elimin)\w*\b[^.]*\barquivo\b", "excluir_arquivo", _extract_excluir)
+_register(r"\barquivo\b.*\b(?:exclu|apag|delet|remov|elimin)\w*\b", "excluir_arquivo", _extract_excluir)
 
 
 # ---------------------------------------------------------------------------
@@ -277,7 +277,7 @@ def _block(pattern: str, message: str):
 
 
 _block(
-    r"\b(?:exclu|apag|delet|remov|elimin)(?:ir|a|e|ar|indo)\b.*\b(?:pasta|diret[oó]rio)\b",
+    r"\b(?:exclu|apag|delet|remov|elimin)\w*\b.*\b(?:pasta|diret[oó]rio)\b",
     "Não posso excluir pastas por razões de segurança. Você pode fazer isso manualmente pelo Explorador de Arquivos.",
 )
 _block(
