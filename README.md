@@ -16,7 +16,8 @@ O Agente Local é um aplicativo web que roda inteiramente na sua máquina. Você
 - Verificar, listar e encerrar processos
 - Consultar informações do sistema (RAM, CPU, disco)
 - Listar arquivos da Área de Trabalho
-- Criar pastas, mover e renomear arquivos
+- Criar, mover, renomear e excluir arquivos
+- Criar pastas
 - Abrir aplicativos
 - Consultar data e hora
 
@@ -26,8 +27,9 @@ O Agente Local é um aplicativo web que roda inteiramente na sua máquina. Você
 
 O agente usa uma arquitetura híbrida para ser rápido e confiável:
 
-1. **Intent Matcher local** — reconhece padrões comuns via regex e executa a ferramenta instantaneamente, sem chamar nenhum modelo de IA
-2. **Ollama (fallback)** — para pedidos complexos que o matcher não reconhece, envia ao modelo local via Ollama
+1. **Bloqueio de ações perigosas** — intercepta pedidos como excluir pastas, desinstalar apps, editar registro, etc. e recusa instantaneamente
+2. **Intent Matcher local** — reconhece padrões comuns via regex e executa a ferramenta instantaneamente, sem chamar nenhum modelo de IA
+3. **Ollama (fallback)** — para pedidos complexos que o matcher não reconhece, envia ao modelo local via Ollama
 
 Na prática, a maioria dos comandos é resolvida em milissegundos pelo matcher local. O modelo só é acionado para frases ambíguas ou fora dos padrões conhecidos.
 
@@ -42,7 +44,7 @@ agente-local/
 │   │   └── schemas.py             # Schemas Pydantic
 │   ├── services/
 │   │   ├── agent.py               # Lógica principal do agente
-│   │   ├── intent_matcher.py      # Reconhecimento local de intenções
+│   │   ├── intent_matcher.py      # Reconhecimento local de intenções + bloqueios
 │   │   ├── ollama_client.py       # Cliente HTTP para Ollama
 │   │   ├── confirmation_store.py  # Ações pendentes em memória
 │   │   ├── app_registry.py        # Catálogo de apps suportados
@@ -50,7 +52,7 @@ agente-local/
 │   │   └── powershell_runner.py   # Execução controlada de PowerShell
 │   ├── tools/
 │   │   ├── system_tools.py        # IP, hora, info sistema, disco
-│   │   ├── file_tools.py          # Listar, criar, mover, renomear
+│   │   ├── file_tools.py          # Listar, criar, excluir, mover, renomear
 │   │   ├── app_tools.py           # Abrir aplicativos
 │   │   ├── network_tools.py       # Ping, ipconfig
 │   │   └── process_tools.py       # Verificar, listar, fechar processos
@@ -175,9 +177,11 @@ Abra o navegador em: **http://localhost:8000**
 | Comando | O que faz |
 |---|---|
 | "quais arquivos estão no desktop?" | Lista a Área de Trabalho |
+| "crie um arquivo chamado teste.txt" | Cria arquivo (pede confirmação) |
 | "crie uma pasta chamada Projetos" | Cria pasta (pede confirmação) |
 | "renomeie teste.txt para teste2.txt" | Renomeia (pede confirmação) |
 | "mova relatorio.pdf para Documents" | Move arquivo (pede confirmação) |
+| "apague o arquivo teste.txt" | Exclui arquivo (pede confirmação) |
 
 ### Aplicativos
 
@@ -194,7 +198,7 @@ Abra o navegador em: **http://localhost:8000**
 | "que horas são?" | Data e hora atual em português |
 | "que dia é hoje?" | Mesmo que acima |
 
-## Ferramentas Disponíveis (14)
+## Ferramentas Disponíveis (16)
 
 | Ferramenta | Confirmação | Descrição |
 |---|---|---|
@@ -208,9 +212,11 @@ Abra o navegador em: **http://localhost:8000**
 | `listar_processos` | Não | Lista processos em execução |
 | `listar_desktop` | Não | Arquivos da Área de Trabalho |
 | `abrir_app` | Não | Abre aplicativo por nome |
+| `criar_arquivo` | **Sim** | Cria arquivo vazio |
 | `criar_pasta_desktop` | **Sim** | Cria pasta no Desktop |
 | `mover_arquivo` | **Sim** | Move arquivo entre pastas permitidas |
 | `renomear_arquivo` | **Sim** | Renomeia arquivo |
+| `excluir_arquivo` | **Sim** | Exclui arquivo (extensões protegidas bloqueadas) |
 | `fechar_processo` | **Sim** | Encerra um processo |
 
 ## Aplicativos Suportados
@@ -243,23 +249,26 @@ O projeto foi desenhado com segurança como prioridade:
 
 - **Sem execução livre de comandos** — o agente só pode usar ferramentas pré-definidas
 - **Pastas restritas** — operações de arquivo limitadas a Desktop, Documents e Downloads
-- **Confirmação obrigatória** — ações destrutivas exigem confirmação explícita
-- **Sem exclusão de arquivos** — o agente não pode apagar nada
+- **Confirmação obrigatória** — ações que modificam ou excluem arquivos exigem confirmação explícita
+- **Extensões protegidas** — arquivos .exe, .dll, .bat, .ps1, .lnk, .reg, .msi, .sys não podem ser excluídos
 - **Sem privilégios elevados** — opera apenas no contexto do usuário atual
 - **Processos protegidos** — processos críticos do sistema não podem ser encerrados
-- **Validação de caminhos** — todos os caminhos são normalizados e verificados
+- **Validação de caminhos** — todos os caminhos são normalizados e verificados contra travessia de diretório
 - **Sanitização de inputs** — hostnames e nomes de processos são validados contra injeção
-- **PowerShell controlado** — quando usado, tem timeout e lista de bloqueio
+- **Bloqueio preventivo** — ações perigosas são interceptadas antes de chegar ao modelo de IA
 
 ### O agente NÃO pode:
 
-- Apagar arquivos ou pastas
+- Excluir pastas
+- Excluir arquivos executáveis ou de sistema (.exe, .dll, .bat, .ps1, .reg, etc.)
 - Editar o registro do Windows
 - Desinstalar aplicativos
+- Formatar discos
+- Desligar ou reiniciar o computador
 - Executar comandos administrativos
 - Acessar pastas fora do escopo permitido
 - Encerrar processos críticos do sistema (csrss, svchost, explorer, etc.)
-- Usar `Invoke-Expression` ou comandos equivalentes
+- Executar scripts ou comandos PowerShell arbitrários
 
 ## Testes
 
@@ -281,7 +290,7 @@ pytest tests/ -v
 
 - [ ] Histórico de conversa persistente
 - [ ] Streaming de respostas do modelo
-- [ ] Mais ferramentas (busca de arquivos, clipboard, screenshots, etc.)
+- [ ] Busca de arquivos por nome
 - [ ] Catálogo expandido de aplicativos
 - [ ] Interface com temas (claro/escuro)
 - [ ] Logs de auditoria das ações executadas
