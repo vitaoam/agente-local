@@ -298,7 +298,7 @@ pytest tests/ -v
 
 ## Autores
 
-- **Vitor Amaral** — [vitoramamaral@gmail.com](mailto:vitoramamaral@gmail.com)
+- **Vitor Amaral** — [vitoramamaral@gmail.com](mailto:vitoramamaral@gmail.com) · [github.com/vitaoam](https://github.com/vitaoam)
 - **Cassiano** — [cassianogb@gmail.com](mailto:cassianogb@gmail.com) · [github.com/casmachine](https://github.com/casmachine)
 
 ## Licença
