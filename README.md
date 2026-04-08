@@ -100,7 +100,7 @@ $env:OLLAMA_MODEL = "qwen2.5:3b"
 ### 1. Clonar o repositório
 
 ```powershell
-git clone https://github.com/seu-usuario/agente-local.git
+git clone https://github.com/vitaoam/agente-local.git
 cd agente-local
 ```
 
